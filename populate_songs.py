@@ -120,7 +120,14 @@ def populate_songs(
     for inEvent in inEvents:
         if inEvent.style == SONG_STYLE_NAME and inEvent.text:
             outEvents.extend(
-                populate_song(songService, inEvent, actorToStyle, effectName, shouldOverwriteEffect, shouldPrintTitle)
+                populate_song(
+                    songService,
+                    inEvent,
+                    actorToStyle,
+                    effectName,
+                    shouldOverwriteEffect,
+                    shouldPrintTitle,
+                )
             )
         else:
             outEvents.append(inEvent)
@@ -140,8 +147,14 @@ def main():
     parser.add_argument("--config", help="Path to config file", default="./config.json")
 
     effectGroup = parser.add_mutually_exclusive_group()
-    effectGroup.add_argument("--effect", help="Default effect to use", default="default_live_karaoke_effect")
-    effectGroup.add_argument("--force-effect", help="Force overwrite effect with supplied value even if an effect is specified in kfx tags", default="")
+    effectGroup.add_argument(
+        "--effect", help="Default effect to use", default="default_live_karaoke_effect"
+    )
+    effectGroup.add_argument(
+        "--force-effect",
+        help="Force overwrite effect with supplied value even if an effect is specified in kfx tags",
+        default="",
+    )
 
     args = parser.parse_args()
 
@@ -174,7 +187,12 @@ def main():
 
             inputAss.events = filter_old_song_lines(inputAss.events)
             inputAss.events = populate_songs(
-                songService, inputAss.events, actorToStyle, effect, shouldOverwriteEffect, args.title
+                songService,
+                inputAss.events,
+                actorToStyle,
+                effect,
+                shouldOverwriteEffect,
+                args.title,
             )
 
             with open(file, "w+", encoding="utf_8_sig") as outFile:
