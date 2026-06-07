@@ -12,18 +12,8 @@ from lyricsheets.effect import KaraokeOnlyEffect
 from lyricsheets.service import SongServiceByDB
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Edits karaoke timing and updates it Google Sheets"
-    )
-
-    parser.add_argument("title", help="Title of the song")
-    parser.add_argument("--group", help="Group that sang the song")
-    parser.add_argument("--config", help="Path to config file", default="./config.json")
-
-    args = parser.parse_args()
-
-    with open(args.config) as f:
+def edit_song_karaoke(title, group=None, config="./config.json"):
+    with open(config) as f:
         config = json.load(f)
 
     songService = SongServiceByDB(
@@ -34,7 +24,7 @@ def main():
     )
 
     print("Fetching song...")
-    song = songService.get_song(args.title)
+    song = songService.get_song(title)
     script = pyass.Script(
         styles=[pyass.Style()], events=KaraokeOnlyEffect().to_events(song, {}, False)
     )
@@ -64,6 +54,19 @@ def main():
         songService.update_song_karaoke(song)
 
     os.remove(f.name)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Edits karaoke timing and updates it Google Sheets"
+    )
+
+    parser.add_argument("title", help="Title of the song")
+    parser.add_argument("--group", help="Group that sang the song")
+    parser.add_argument("--config", help="Path to config file", default="./config.json")
+
+    args = parser.parse_args()
+    edit_song_karaoke(args.title, args.group, args.config)
 
 
 if __name__ == "__main__":
