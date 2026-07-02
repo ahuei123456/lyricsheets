@@ -1,25 +1,26 @@
-name: black-action
+name: ruff-format
 on: [push, pull_request]
 jobs:
-  line:
-    name: runner / black
+  format:
+    name: runner / ruff format
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
-      - name: Check files using the black formatter
-        uses: psf/black@stable
-        id: action_black
+      - name: Format files using Ruff
+        uses: astral-sh/ruff-action@v4.0.0
         with:
-          black_args: "."
+          args: "format"
       - name: Create Pull Request
-        if: steps.action_black.outputs.is_formatted == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          title: "Format Python code with psf/black push"
-          commit-message: ":art: Format Python code with psf/black"
+          title: "Format Python code with Ruff"
+          commit-message: ":art: Format Python code with Ruff"
           body: |
             There appear to be some python formatting errors in ${{ github.sha }}. This pull request
-            uses the [psf/black](https://github.com/psf/black) formatter to fix these issues.
+            uses the [Ruff](https://github.com/astral-sh/ruff) formatter to fix these issues.
           base: ${{ github.head_ref }} # Creates pull request onto pull request or commit branch
-          branch: actions/black
+          branch: actions/ruff-format

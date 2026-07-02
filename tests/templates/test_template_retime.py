@@ -20,8 +20,8 @@ def mock_kObjects():
 
         mock_kSyl = Mock(spec=KSyl)
 
-        mock_kSyl.start = timedelta(seconds=i*5)
-        mock_kSyl.end = timedelta(seconds=(i+1)*5)
+        mock_kSyl.start = timedelta(seconds=i * 5)
+        mock_kSyl.end = timedelta(seconds=(i + 1) * 5)
         mock_kSyl.duration = timedelta(seconds=5)
 
         mock_kSyl.chars = []

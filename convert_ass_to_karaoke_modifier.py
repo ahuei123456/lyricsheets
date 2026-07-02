@@ -16,7 +16,7 @@ def convert_ass_to_karaoke_modifier(input_fname, offset=1):
         print(
             ";".join(
                 [
-                    f'Karaoke,{i+offset},{line.start},{line.end},{",".join([str(int(syllable.length.total_seconds() * 100)) for syllable in line.syllables])}'
+                    f"Karaoke,{i + offset},{line.start},{line.end},{','.join([str(int(syllable.length.total_seconds() * 100)) for syllable in line.syllables])}"
                     for i, line in enumerate(detailedLyrics)
                 ]
             )

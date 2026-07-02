@@ -92,9 +92,7 @@ def print_song_karaoke_command(
 @app.command("convert_ass_to_karaoke_modifier")
 def convert_ass_to_karaoke_modifier_command(
     input_fname: Annotated[Path, typer.Argument(help="Path to input file")],
-    offset: Annotated[
-        int, typer.Option("--offset", help="Index of first line")
-    ] = 1,
+    offset: Annotated[int, typer.Option("--offset", help="Index of first line")] = 1,
 ) -> None:
     convert_ass_to_karaoke_modifier_script(input_fname, offset)
 
