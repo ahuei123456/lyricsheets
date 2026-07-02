@@ -1,8 +1,9 @@
 backoff==2.2.1
-dataclass-wizard==0.22.2
+dataclass-wizard==0.39.1
 Flask==2.2.2
 google-api-python-client==2.65.0
 pyass==0.1.2
 redis==4.4.0
 token-bucket==0.3.0
-wxPython==4.2.1
+typer==0.26.7
+wxPython==4.2.5

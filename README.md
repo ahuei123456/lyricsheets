@@ -8,13 +8,14 @@ Lyricsheets takes song data (lyrics, syllable timings, metadata) stored in a Goo
 
 ## Prerequisites
 
-*   **Python 3.x:** Ensure Python is installed and accessible from your command line.
+*   **Python 3.14:** Ensure Python is installed and accessible from your command line. The repo pins Python 3.14 for uv.
+*   **uv:** Install `uv` to create the project environment, run scripts, and build distributions.
 *   **Aegisub:** You'll need Aegisub or a compatible `.ass` editor to prepare the initial timing file.
 *   **Google Sheet:** A properly structured Google Sheet containing your song database (lyrics, timings, metadata).
 *   **Google Cloud Credentials:** You'll need credentials set up to allow the script to access your Google Sheet via the API. 
-*   **Dependencies:** Install required Python packages:
-    ```sh
-    pip install -r requirements.txt 
+*   **Dependencies:** Install required Python packages with uv:
+    ```powershell
+    uv sync
     ```
 
 ## Basic Usage
@@ -35,13 +36,13 @@ Lyricsheets takes song data (lyrics, syllable timings, metadata) stored in a Goo
 2.  **Run the script:**
     Execute the `populate_songs.py` script, passing the `.ass` file(s) you prepared as arguments:
 
-    ```sh
-    python populate_songs.py input.ass
+    ```powershell
+    uv run lyricsheets-populate input.ass
     ```
 
     To process multiple files at once:
-    ```sh
-    python populate_songs.py input1.ass input2.ass input3.ass ...
+    ```powershell
+    uv run lyricsheets-populate input1.ass input2.ass input3.ass ...
     ```
 
 3.  **Output:**
@@ -54,6 +55,30 @@ Lyricsheets takes song data (lyrics, syllable timings, metadata) stored in a Goo
 
 *   `--config <config_file_path>`: Specify the path to your configuration file (contains Google API credentials, Sheet ID, etc.). Defaults to `config.json` in the script's directory.
 *   `--title <True/False>`: Control whether title cards are generated. Defaults to `True`.
+
+## uv Commands
+
+Run individual scripts through their installed command names:
+
+```powershell
+uv run lyricsheets-populate input.ass
+uv run lyricsheets-create-song input.ass "Song Title"
+uv run lyricsheets-edit-karaoke "Song Title"
+uv run lyricsheets-print-karaoke "Song Title"
+uv run lyricsheets-ass-to-modifier input.ass
+```
+
+You can still run the original script files directly:
+
+```powershell
+uv run python populate_songs.py input.ass
+```
+
+Build source and wheel distributions:
+
+```powershell
+uv build
+```
 
 ## Advanced Features
 

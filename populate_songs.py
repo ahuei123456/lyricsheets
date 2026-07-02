@@ -2,11 +2,11 @@ import argparse
 from collections.abc import Mapping, Sequence
 from datetime import timedelta
 import functools
+import importlib.machinery
 import importlib.util
 import json
 import os
 import pyass
-import sys
 
 from lyricsheets.ass import REQUIRED_STYLES, retrieve_effect
 from lyricsheets.cache import MemoryCache
@@ -49,6 +49,7 @@ def populate_song(
     effectName: str,
     shouldOverwriteEffect: bool,
     shouldPrintTitle: bool,
+    importPaths: Sequence[str] | None = None,
 ) -> Sequence[pyass.Event]:
     outEvents = []
 
@@ -82,6 +83,10 @@ def populate_song(
         for modifier in allModifiers:
             if modifier.operation == "import":
                 spec = importlib.util.find_spec(modifier.rest[0])
+                if not spec and importPaths:
+                    spec = importlib.machinery.PathFinder.find_spec(
+                        modifier.rest[0], importPaths
+                    )
                 if not spec or not spec.loader:
                     raise ModuleNotFoundError
 
@@ -114,18 +119,75 @@ def populate_songs(
     effectName: str,
     shouldOverwriteEffect: bool,
     shouldPrintTitle: bool,
+    importPaths: Sequence[str] | None = None,
 ) -> Sequence[pyass.Event]:
     outEvents = []
 
     for inEvent in inEvents:
         if inEvent.style == SONG_STYLE_NAME and inEvent.text:
             outEvents.extend(
-                populate_song(songService, inEvent, actorToStyle, effectName, shouldOverwriteEffect, shouldPrintTitle)
+                populate_song(
+                    songService,
+                    inEvent,
+                    actorToStyle,
+                    effectName,
+                    shouldOverwriteEffect,
+                    shouldPrintTitle,
+                    importPaths,
+                )
             )
         else:
             outEvents.append(inEvent)
 
     return outEvents
+
+
+def populate_song_files(
+    input_fnames,
+    shouldPrintTitle=True,
+    config="./config.json",
+    effect="default_live_karaoke_effect",
+    forceEffect="",
+):
+    with open(config) as f:
+        config = json.load(f)
+
+    songService = SongServiceByDB(
+        config["google_credentials"],
+        config["spreadsheets"],
+        config["default"],
+        MemoryCache(),
+    )
+
+    actorToStyle = {
+        k: pyass.Tags.parse(v) for k, v in songService.get_all_format_tags().items()
+    }
+
+    shouldOverwriteEffect = forceEffect != ""
+    if shouldOverwriteEffect:
+        effect = forceEffect
+
+    for file in input_fnames:
+        filePath = os.fspath(file)
+        importPaths = [os.path.dirname(os.path.abspath(filePath))]
+        with open(filePath, encoding="utf_8_sig") as inputFile:
+            inputAss = pyass.load(inputFile)
+
+            inputAss.styles = populate_styles(inputAss.styles)
+
+            inputAss.events = filter_old_song_lines(inputAss.events)
+            inputAss.events = populate_songs(
+                songService,
+                inputAss.events,
+                actorToStyle,
+                effect,
+                shouldOverwriteEffect,
+                shouldPrintTitle,
+                importPaths,
+            )
+
+            with open(filePath, "w+", encoding="utf_8_sig") as outFile:
+                pyass.dump(inputAss, outFile)
 
 
 def main():
@@ -140,45 +202,23 @@ def main():
     parser.add_argument("--config", help="Path to config file", default="./config.json")
 
     effectGroup = parser.add_mutually_exclusive_group()
-    effectGroup.add_argument("--effect", help="Default effect to use", default="default_live_karaoke_effect")
-    effectGroup.add_argument("--force-effect", help="Force overwrite effect with supplied value even if an effect is specified in kfx tags", default="")
-
-    args = parser.parse_args()
-
-    with open(args.config) as f:
-        config = json.load(f)
-
-    songService = SongServiceByDB(
-        config["google_credentials"],
-        config["spreadsheets"],
-        config["default"],
-        MemoryCache(),
+    effectGroup.add_argument(
+        "--effect", help="Default effect to use", default="default_live_karaoke_effect"
+    )
+    effectGroup.add_argument(
+        "--force-effect",
+        help="Force overwrite effect with supplied value even if an effect is specified in kfx tags",
+        default="",
     )
 
-    actorToStyle = {
-        k: pyass.Tags.parse(v) for k, v in songService.get_all_format_tags().items()
-    }
-
-    shouldOverwriteEffect = args.force_effect != ""
-    if shouldOverwriteEffect:
-        effect = args.force_effect
-    else:
-        effect = args.effect
-
-    for file in args.input_fnames:
-        sys.path.append(os.path.dirname(file))
-        with open(file, encoding="utf_8_sig") as inputFile:
-            inputAss = pyass.load(inputFile)
-
-            inputAss.styles = populate_styles(inputAss.styles)
-
-            inputAss.events = filter_old_song_lines(inputAss.events)
-            inputAss.events = populate_songs(
-                songService, inputAss.events, actorToStyle, effect, shouldOverwriteEffect, args.title
-            )
-
-            with open(file, "w+", encoding="utf_8_sig") as outFile:
-                pyass.dump(inputAss, outFile)
+    args = parser.parse_args()
+    populate_song_files(
+        args.input_fnames,
+        args.title,
+        args.config,
+        args.effect,
+        args.force_effect,
+    )
 
 
 if __name__ == "__main__":

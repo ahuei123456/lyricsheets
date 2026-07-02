@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lyricsheets"
+version = "0.1.0"
+description = "Generate advanced karaoke effects in .ass subtitle files from Google Sheets data."
+readme = "README.md"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "backoff==2.2.1",
+    "dataclass-wizard==0.39.1",
+    "Flask==2.2.2",
+    "google-api-python-client==2.65.0",
+    "pyass==0.1.2",
+    "redis==4.4.0",
+    "token-bucket==0.3.0",
+    "typer>=0.26.7",
+    "wxPython==4.2.5",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.3",
+]
+
+[project.scripts]
+lyricsheets = "lyricsheets.cli:main"
+lyricsheets-ass-to-modifier = "convert_ass_to_karaoke_modifier:main"
+lyricsheets-create-song = "create_song:main"
+lyricsheets-edit-karaoke = "edit_song_karaoke:main"
+lyricsheets-populate = "populate_songs:main"
+lyricsheets-print-karaoke = "print_song_karaoke:main"
+
+[tool.setuptools]
+py-modules = [
+    "convert_ass_to_karaoke_modifier",
+    "create_song",
+    "edit_song_karaoke",
+    "populate_songs",
+    "print_song_karaoke",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["lyricsheets*"]
