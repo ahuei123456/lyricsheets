@@ -183,9 +183,7 @@ def populate_song_files(
         )
 
     songService = (
-        songServices[0]
-        if len(songServices) == 1
-        else FallbackSongService(songServices)
+        songServices[0] if len(songServices) == 1 else FallbackSongService(songServices)
     )
 
     actorToStyle = {

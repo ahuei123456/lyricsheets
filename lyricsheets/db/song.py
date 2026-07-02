@@ -157,7 +157,7 @@ class SongDB:
                     ","
                 )
             ]
-        except (IndexError, KeyError):
+        except (IndexError, KeyError):  # fmt: skip
             return []
 
     def _parse_lyrics(self, spreadsheetId: str, sheetData) -> Sequence[song.SongLine]:
@@ -424,7 +424,7 @@ class SongDB:
             range=f"{sheetName}!{rootPos}",
             values=[
                 [
-                    f'=CONCATENATE(ARRAYFORMULA(IF(MOD(COLUMN(I{r+i}:{r+i}),2)=MOD(COLUMN(I{r+i}),2), "", I{r+i}:{r+i})))'
+                    f'=CONCATENATE(ARRAYFORMULA(IF(MOD(COLUMN(I{r + i}:{r + i}),2)=MOD(COLUMN(I{r + i}),2), "", I{r + i}:{r + i})))'
                 ]
                 for i in range(len(songLines))
             ],

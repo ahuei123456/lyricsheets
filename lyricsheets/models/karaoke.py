@@ -273,11 +273,11 @@ class KChar(KObject):
     @property
     def kLine(self) -> KLine:
         return self.line
-    
+
     @property
     def kSyl(self) -> KSyl:
         return self.syl
-    
+
     @property
     def kChar(self) -> KChar:
         return self
@@ -440,11 +440,11 @@ class KSyl(KObject):
     @property
     def kLine(self) -> KLine:
         return self.line
-    
+
     @property
     def kSyl(self) -> KSyl:
         return self
-    
+
     @property
     def kChar(self) -> KChar:
         return self.chars[0]
@@ -771,11 +771,11 @@ class KLine(KObject):
     @property
     def kLine(self) -> KLine:
         return self
-    
+
     @property
     def kSyl(self) -> KSyl:
         return self.syls[0]
-    
+
     @property
     def kChar(self) -> KChar:
         return self.chars[0]
@@ -880,7 +880,7 @@ def to_en_k_line(line: SongLine) -> KLine:
             syl=kSylEN,
             line=kLineEN,
         )
-        for i, char, in enumerate(line.en)
+        for i, char in enumerate(line.en)
     ]
 
     kLineEN.syls.append(kSylEN)

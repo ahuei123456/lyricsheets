@@ -32,8 +32,10 @@ class GoogleSheetsClient:
     @on_exception(
         expo,
         exception=HttpError,
-        giveup=lambda e: not isinstance(e, HttpError)
-        or e.status_code != HTTPStatus.TOO_MANY_REQUESTS,
+        giveup=lambda e: (
+            not isinstance(e, HttpError)
+            or e.status_code != HTTPStatus.TOO_MANY_REQUESTS
+        ),
         max_tries=10,
     )
     def get_values(self, spreadsheetId: str, range: str = ""):
@@ -46,8 +48,10 @@ class GoogleSheetsClient:
     @on_exception(
         expo,
         exception=HttpError,
-        giveup=lambda e: not isinstance(e, HttpError)
-        or e.status_code != HTTPStatus.TOO_MANY_REQUESTS,
+        giveup=lambda e: (
+            not isinstance(e, HttpError)
+            or e.status_code != HTTPStatus.TOO_MANY_REQUESTS
+        ),
         max_tries=10,
     )
     def get(self, spreadsheetId: str, ranges: Sequence[str] = [], fields: str = ""):
@@ -58,8 +62,10 @@ class GoogleSheetsClient:
     @on_exception(
         expo,
         exception=HttpError,
-        giveup=lambda e: not isinstance(e, HttpError)
-        or e.status_code != HTTPStatus.TOO_MANY_REQUESTS,
+        giveup=lambda e: (
+            not isinstance(e, HttpError)
+            or e.status_code != HTTPStatus.TOO_MANY_REQUESTS
+        ),
         max_tries=10,
     )
     def append_values(
@@ -81,8 +87,10 @@ class GoogleSheetsClient:
     @on_exception(
         expo,
         exception=HttpError,
-        giveup=lambda e: not isinstance(e, HttpError)
-        or e.status_code != HTTPStatus.TOO_MANY_REQUESTS,
+        giveup=lambda e: (
+            not isinstance(e, HttpError)
+            or e.status_code != HTTPStatus.TOO_MANY_REQUESTS
+        ),
         max_tries=10,
     )
     def batch_update(self, spreadsheetId: str, requests: Sequence[Mapping[str, Any]]):
