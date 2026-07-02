@@ -80,6 +80,10 @@ Build source and wheel distributions:
 uv build
 ```
 
+## Local songs (no Google Sheets)
+
+Songs can also be generated straight from a karaoke-timed `.ass` file instead of a spreadsheet, via a `local_songs` mapping in the config (`google_credentials` then becomes optional). See [docs/lua-to-python-kfx-migration.md](docs/lua-to-python-kfx-migration.md), which also serves as a guide for porting existing Aegisub Lua karaoke templates to Python effects.
+
 ## Advanced Features
 
 For detailed information on customizing the output, applying advanced effects, and overriding database information, please refer to the project **Wiki**. Topics include:
