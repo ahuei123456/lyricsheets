@@ -82,7 +82,7 @@ uv build
 
 ## Local songs (no Google Sheets)
 
-Songs can also be generated straight from a karaoke-timed `.ass` file instead of a spreadsheet, via a `local_songs` mapping in the config (`google_credentials` then becomes optional). See [docs/lua-to-python-kfx-migration.md](docs/lua-to-python-kfx-migration.md), which also serves as a guide for porting existing Aegisub Lua karaoke templates to Python effects.
+Songs can also be generated straight from a karaoke-timed `.ass` file instead of a spreadsheet, via a `local_songs` mapping in the config (`google_credentials` then becomes optional). See [the migration guide](.agents/skills/lua-to-python-kfx/reference.md), which covers porting existing Aegisub Lua karaoke templates to Python effects — it's also packaged as an [Agent Skill](https://agentskills.io) in [`.agents/skills/lua-to-python-kfx/`](.agents/skills/lua-to-python-kfx/) (auto-discovered by Codex, Gemini CLI, and other tools; Claude Code loads it via a shim in `.claude/skills/`).
 
 ## Advanced Features
 
