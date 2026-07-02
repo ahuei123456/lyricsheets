@@ -11,7 +11,12 @@ import pyass
 from lyricsheets.ass import REQUIRED_STYLES, retrieve_effect
 from lyricsheets.cache import MemoryCache
 import lyricsheets.effect as _
-from lyricsheets.service import SongService, SongServiceByDB
+from lyricsheets.service import (
+    FallbackSongService,
+    SongService,
+    SongServiceByAssFiles,
+    SongServiceByDB,
+)
 from lyricsheets.models import Modifier, Modifiers
 
 SONG_STYLE_NAME = "Song"
@@ -149,14 +154,38 @@ def populate_song_files(
     effect="default_live_karaoke_effect",
     forceEffect="",
 ):
-    with open(config) as f:
+    configPath = os.path.abspath(os.fspath(config))
+    with open(configPath) as f:
         config = json.load(f)
 
-    songService = SongServiceByDB(
-        config["google_credentials"],
-        config["spreadsheets"],
-        config["default"],
-        MemoryCache(),
+    songServices: list[SongService] = []
+
+    if "local_songs" in config:
+        songServices.append(
+            SongServiceByAssFiles(
+                config["local_songs"], baseDir=os.path.dirname(configPath)
+            )
+        )
+
+    if "google_credentials" in config:
+        songServices.append(
+            SongServiceByDB(
+                config["google_credentials"],
+                config["spreadsheets"],
+                config["default"],
+                MemoryCache(),
+            )
+        )
+
+    if not songServices:
+        raise ValueError(
+            "Config must contain 'google_credentials' and/or 'local_songs'"
+        )
+
+    songService = (
+        songServices[0]
+        if len(songServices) == 1
+        else FallbackSongService(songServices)
     )
 
     actorToStyle = {
