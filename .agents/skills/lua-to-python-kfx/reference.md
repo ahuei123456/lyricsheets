@@ -1,10 +1,30 @@
 # Migrating Aegisub Lua karaoke templates to Python KFX
 
 This guide covers taking a song that only exists as a karaoke-timed `.ass` file
-with inline Lua (karaoke templater or 0x-templater style) and regenerating the
-same effect with lyricsheets — **no Google Sheets database required**. It is
-based on the migration of two Hasunosora movie songs (`hanasakebafx.py`,
-`hikarifx.py` in the Onibe-Subs repo), which are good worked examples.
+with inline Lua and regenerating the same effect with lyricsheets — **no Google
+Sheets database required**. It is based on the migration of two Hasunosora
+movie songs (`hanasakebafx.py`, `hikarifx.py` in the Onibe-Subs repo), which
+are good worked examples.
+
+## 0. Identify the source templater first
+
+There are (at least) three mutually incompatible Aegisub templaters, and the
+same Effect string can mean different things in each (`template line` is
+per-syllable in stock, per-line in karaOK). Identify the dialect before
+reading a single template, then read the matching doc in `templaters/`:
+
+| Templater | Telltale signs | Doc |
+|---|---|---|
+| Stock Aegisub karaoke templater | `template pre-line`, `fx`/`fxgroup` modifiers, numeric `loop n`, no mixins | `templaters/stock-kara-templater.md` |
+| karaOK (logarithm) | `lsyl`/`lword`/`lchar`/`word`/`furichar` classes, `code word/char`, `k_retime`, `ci` | `templaters/karaok.md` |
+| The0x539's KaraTemplater | `mixin` components, named `loop foo 3`, `if`/`unless`, `actor`/`t_actor`, `anystyle` | `templaters/the0x-karatemplater.md` |
+
+`ln.` calls (the karaOK *library*) appear under all three templaters and don't
+identify anything; the `ln.kara` → Python mapping lives in
+`templaters/karaok.md`. All three templaters share karaskel's `line`/`syl`
+data model, so the translation table below applies to all of them; the
+per-templater docs cover the dialect-specific classes, modifiers, and
+functions.
 
 ## Overview
 
@@ -48,7 +68,10 @@ an object when the default style detection isn't enough:
 ### What the source file must look like
 
 The adapter reads events (Dialogue **or** Comment — comment your source lines
-out so they don't render) whose Effect field contains `karaoke`:
+out so they don't render) whose Effect field contains `karaoke`, using a
+case-insensitive substring match. This is intentionally looser than every
+templater's own input matching (see each templater doc); audit lines the
+adapter picks up that the original templater would have skipped.
 
 - **Romaji lines** — style name containing `romaji` (case-insensitive), or
   matching the `romaji_style` prefix. Must carry `{\k}` syllable timings.
@@ -66,7 +89,7 @@ out so they don't render) whose Effect field contains `karaoke`:
 Starting from the Lua-templated file:
 
 1. **Delete** all the Lua `Comment` lines (`code once`, `code line`,
-   `template ...`, `mixin ...`).
+   `template ...`, `mixin ...`) and any stale generated lines (Effect `fx`).
 2. **Convert** every source karaoke `Dialogue` line to `Comment` (keep
    `karaoke` in the Effect field).
 3. **Add the styles** your generated events will use. Their names must start
@@ -119,9 +142,10 @@ Template syntax essentials:
 
 - `template line|syl|char`, plus `noblank` (skip whitespace-only syls/chars)
   and `notext` (don't append the object's text — you supply it yourself).
-- The third `Template.compile` argument is the **layer**. In karaoke-templater
-  files the layer lives on each template's Comment line; in 0x files too.
-  One `Template` = one Lua template line.
+  There is no `word`, `furi`, mixin, or loop support — the templater docs say
+  how to fold each dialect's extras into these three classes.
+- The third `Template.compile` argument is the **layer**, taken from each Lua
+  template's Comment line. One `Template` = one Lua template line.
 - `!helper()!` calls a function from `globals_dict`; it is always invoked as
   `helper(kObject, event, *args)`. Return a tag string (or a number). The
   expression evaluator only supports arithmetic, calls, names and indexing —
@@ -132,7 +156,10 @@ Template syntax essentials:
 
 ### Lua → lyricsheets translation table
 
-| Lua (karaskel / 0x templater) | lyricsheets equivalent |
+These rows hold for all three templaters (karaskel-shared concepts);
+dialect-specific mappings are in the `templaters/` docs.
+
+| Lua (karaskel) | lyricsheets equivalent |
 |---|---|
 | `syl.start_time` / `syl.end_time` (ms, line-relative) | `$sstart` / `$send`, or `ms(kObject.kSyl.start)` in a helper |
 | `syl.kdur` (centiseconds) | `$skdur`, or `ms(duration) // 10` |
@@ -140,21 +167,26 @@ Template syntax essentials:
 | `syl.center` (relative to the line's left edge) | `kSyl.center` is **absolute** — use `kSyl.center - kLine.left` |
 | `orgline.center - orgline.left` | `kLine.width / 2` |
 | `$ldur`, `$lstart`, `$lmid` | same names |
-| `retime("line", a, b)` | `retime(kObject, event, "line", a, b)` via a helper (all modes supported) |
+| `retime("line", a, b)` | `retime(kObject, event, "line", a, b)` via a helper (stock modes + char modes; 0x-only modes need emulation — see the 0x doc) |
 | `code once` globals | module-level constants |
-| `code line` per-line state | helper caching per `(kLine.isEN, kLine.idxInSong)`; lines are processed in order (all romaji, then all English), so sequential state like "previous line's end time" chains naturally |
-| `template syl actor green` / actor filters | one template + a helper branching on `kLine.startActor` / `kLine.isSecondary` |
-| 0x `mixin char` / `mixin syl` on a line template | `template line notext` + a helper that builds the whole text as per-char `{tags}c{tags}h…` blocks. Keeps borders/blur contiguous — per-char *events* double-blend where glows overlap |
-| 0x `util.xf()` | `(kChar.i - 1) / (len(kLine.chars) - 1)` |
+| `code line` per-line state | Reproduce the original filtered source-order walk, then cache computed results by a stable song-local key such as `(kLine.isEN, kLine.idxInSong)`. Do not assume lyricsheets runtime order is semantically equivalent. |
+| actor-filtered template variants (`actor green`, stock per-style copies) | one template + a helper branching on `kLine.startActor` / `kLine.isSecondary` |
 | `inline_fx` | `kSyl.inlineFx` (from per-line actors/breakpoints) |
 
 ### Quirks worth knowing
 
-- **`$li` counts differently.** The Aegisub templater's `li` keeps counting
-  across every karaoke line in the file (romaji *and* English), while
-  `idxInSong` restarts per language. If a color cycle keys off `$li` for
-  English lines, add the romaji line count as an offset to reproduce the
-  original colors (see `EN_LINE_INDEX_OFFSET` in `hanasakebafx.py`).
+- **`$li` has no general `idxInSong` equivalent.** Its meaning depends on the
+  source templater and subtitle state (see each templater doc); deleting or
+  reordering rows changes it. On an untouched disposable copy, use the real
+  templater or an Automation macro over Aegisub's `subs` indexing to capture
+  every required `$li`-derived value first. Store immutable mappings inside
+  the song effect and fail on missing entries. Do not add `sourceLineIndex`
+  or any other migration-only field to `SongLine` or `KLine`.
+- **`code line` execution is filter-sensitive and stateful** in every
+  templater: components run only when their style/actor/condition filters
+  match and mutate one shared environment, in source order. Capture or
+  simulate that exact walk before translating the resulting state to
+  lyricsheets keys.
 - **English `KLine` syllable times are absolute**, not line-relative like
   romaji (see `to_en_k_line`). Avoid syllable-time math on English lines.
 - **Positions come from real font metrics.** `FontScaler` measures with wx
@@ -162,6 +194,25 @@ Template syntax essentials:
   attachment), install it first — otherwise wx silently falls back to a
   default font and every position is subtly wrong.
 - Times fed to `\t(...)` should be ints — round in your helpers.
+- **Randomness breaks idempotency.** Any `math.random`/`util.rand`/`ln`
+  randomization must be ported with deterministic per-line/per-syl seeding,
+  or the run-populate-twice check will fail.
+
+### Intentional deviations
+
+Before accepting a port, compare it against the original source and record all
+deliberate behavior changes. In particular, check:
+
+- English auto-fitting added to prevent overflow.
+- `noblank` or other harmless blank-syllable cleanup.
+- Extra ASS tags that were not emitted by the Lua template.
+- Source lines picked up by lyricsheets that the original templater would
+  skip — each templater doc describes its exact input matching versus the
+  adapter's case-insensitive `karaoke` substring match.
+- Sub-pixel precision: lyricsheets keeps float positions where stock rounds
+  to ints (karaOK to one decimal).
+
+Keep each divergence only when it is intentional and covered by verification.
 
 ## 4. Verifying the port
 
